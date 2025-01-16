@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chinese Name Generator</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .loading {
+            display: none;
+        }
+        .loading.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">Chinese Name Generator</h1>
+            <p class="text-gray-600">Discover your perfect Chinese name with cultural meaning</p>
+        </header>
+
+        <div class="max-w-xl mx-auto bg-white rounded-lg shadow-md p-6">
+            <form id="nameForm" class="space-y-4">
+                <div>
+                    <label for="englishName" class="block text-sm font-medium text-gray-700">Enter your English name</label>
+                    <input type="text" id="englishName" name="englishName" required
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <p class="mt-1 text-sm text-gray-500">Example: Michael, John Smith</p>
+                </div>
+                <button type="submit"
+                        class="w-full bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    Generate Names
+                </button>
+            </form>
+
+            <div id="loading" class="loading text-center py-4">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+                <p class="text-gray-600 mt-2">Generating your perfect Chinese name...</p>
+            </div>
+
+            <div id="results" class="mt-8 space-y-6 hidden">
+                <!-- Results will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <template id="suggestionTemplate">
+        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800">{chinese_name}</h3>
+                    <p class="text-gray-600">{pinyin}</p>
+                </div>
+                <button class="text-indigo-600 hover:text-indigo-800 text-sm" onclick="copyToClipboard(this)">
+                    Copy
+                </button>
+            </div>
+            <div class="mt-3 space-y-2">
+                <p><span class="font-medium">Meaning:</span> {meaning}</p>
+                <p><span class="font-medium">English:</span> {english_explanation}</p>
+                <p><span class="font-medium">Cultural Context:</span> {cultural_context}</p>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        document.getElementById('nameForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const englishName = document.getElementById('englishName').value;
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+
+            // Show loading, hide results
+            loading.classList.add('active');
+            results.classList.add('hidden');
+
+            try {
+                const response = await fetch('/api/generate-names', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ english_name: englishName }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+                
+                // Clear previous results
+                results.innerHTML = '';
+
+                // Get template
+                const template = document.getElementById('suggestionTemplate').innerHTML;
+
+                // Add each suggestion
+                data.suggestions.forEach(suggestion => {
+                    let suggestionHtml = template
+                        .replace('{chinese_name}', suggestion.chinese_name)
+                        .replace('{pinyin}', suggestion.pinyin)
+                        .replace('{meaning}', suggestion.meaning)
+                        .replace('{english_explanation}', suggestion.english_explanation)
+                        .replace('{cultural_context}', suggestion.cultural_context);
+                    
+                    results.innerHTML += suggestionHtml;
+                });
+
+                // Hide loading, show results
+                loading.classList.remove('active');
+                results.classList.remove('hidden');
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while generating names. Please try again.');
+                loading.classList.remove('active');
+            }
+        });
+
+        function copyToClipboard(button) {
+            const nameElement = button.parentElement.querySelector('h3');
+            const pinyinElement = button.parentElement.querySelector('p');
+            
+            const textToCopy = `${nameElement.textContent} (${pinyinElement.textContent})`;
+            
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
