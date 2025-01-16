@@ -15,7 +15,7 @@ type Config struct {
 func GetConfig() *Config {
 	return &Config{
 		Ollama: OllamaConfig{
-			URL:            "http://210.73.217.30:28091",
+			URL:            "http://127.0.0.1:11434",
 			EmbeddingModel: "glm4:9b",
 		},
 	}
